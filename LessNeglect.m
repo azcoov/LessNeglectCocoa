@@ -317,6 +317,9 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
                     andCompletionBlock:^(id JSON, NSError *error){
                         NSAssert(!error, @"Request failed with error: %@", error);
                         if([[JSON objectForKey:@"success"] boolValue]){
+                            // TODO: it is possible that postQueuedEvents could be called and added to the queue
+                            // before the files from the previous run have all ben remvoed, this would result in
+                            // duplicate events...
                             [wself dispatchOnSynchronousQueue:^{
                                 [[NSFileManager defaultManager] removeItemAtPath:eventFilePath error:nil];
                             }];
@@ -378,10 +381,6 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
     NSAssert(self.code || self.secret, @"The code and secret must be set.");
     
     AFHTTPClient *httpClient = [self httpClient];
-    if(httpClient.networkReachabilityStatus == AFNetworkReachabilityStatusNotReachable){
-        return nil;
-    }
-
     [httpClient setAuthorizationHeaderWithUsername:self.code password:self.secret];
     NSURLRequest *request = [httpClient requestWithMethod:method path:path parameters:parameters];
 
