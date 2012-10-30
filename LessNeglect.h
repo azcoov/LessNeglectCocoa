@@ -80,14 +80,18 @@ extern NSString *LNEventAppActivityViewed(NSString *item);
 #pragma mark - Manager
 @interface LNManager : NSObject
 
+@property (strong, nonatomic) LNPerson *currentPerson;
+
 + (id)sharedInstance;
 
 - (void)setCode:(NSString *)code andSecret:(NSString *)secret;
 
 - (void)updatePerson:(LNPerson *)person
  withCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock;
+- (void)updateCurrentPersonWithCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock;
 
 - (void)postEvent:(LNEvents *)event forPerson:(LNPerson *)person
 withCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock;
+- (void)postEvent:(LNEvents *)event forCurrentPersonWithCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock;
 
 @end

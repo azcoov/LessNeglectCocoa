@@ -215,11 +215,19 @@ NSString *LNEventAppActivityViewed(NSString *item){
     self.secret = secret;
 }
 
+- (void)postEvent:(LNEvents *)event forCurrentPersonWithCompletionBlock:(void (^)(id, NSError *))completionBlock{
+    [self postEvent:event forPerson:self.currentPerson withCompletionBlock:completionBlock];
+}
+
 - (void)postEvent:(LNEvents *)event forPerson:(LNPerson *)person
 withCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock{
     NSMutableDictionary *parameters = [[event parameters] mutableCopy];
     [parameters addEntriesFromDictionary:[person parameters]];
     [self requestWithMethod:@"POST" path:@"/api/v2/events" andParameters:parameters withCompletionBlock:completionBlock];
+}
+
+- (void)updateCurrentPersonWithCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock{
+    [self updatePerson:self.currentPerson withCompletionBlock:completionBlock];
 }
 
 - (void)updatePerson:(LNPerson *)person withCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock{
