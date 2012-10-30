@@ -13,7 +13,6 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions{
     [[LNManager sharedInstance] setCode:@"<code>" andSecret:@"<secret>"];
-
     LNPerson *currentPerson = [LNPerson personWithName:@"Christopher Gooley" andEmail:@"gooley@lessneglect.com"];
     currentPerson.properties = @{LNPersonPropertyAvatarURL: @"https://foliohd.com/image/sqavatar/gooley.jpg"};
     [[LNManager sharedInstance] setCurrentPerson:currentPerson];
