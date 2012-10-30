@@ -44,13 +44,13 @@ NSString *LNEventAppActivityCreated(NSString *item){
     return actionAndItem(@"created", item);
 }
 NSString *LNEventAppActivityUploaded(NSString *item){
-    return actionAndItem(@"uploaded", item);    
+    return actionAndItem(@"uploaded", item);
 }
 NSString *LNEventAppActivityDeleted(NSString *item){
-    return actionAndItem(@"deleted", item);    
+    return actionAndItem(@"deleted", item);
 }
 NSString *LNEventAppActivityModified(NSString *item){
-    return actionAndItem(@"modified", item);    
+    return actionAndItem(@"modified", item);
 }
 NSString *LNEventAppActivityViewed(NSString *item){
     return actionAndItem(@"viewed", item);
@@ -60,7 +60,7 @@ NSString *LNEventAppActivityViewed(NSString *item){
 @implementation LNEvents
 
 + (id)eventWithName:(NSString *)name{
-    return [[[self class] alloc] initWithName:name];    
+    return [[[self class] alloc] initWithName:name];
 }
 
 - (id)initWithName:(NSString *)name{
@@ -135,7 +135,7 @@ NSString *LNEventAppActivityViewed(NSString *item){
 - (NSDictionary *)parameters{
     NSMutableDictionary *parameters = [NSMutableDictionary dictionary];
     parameters[@"event[klass]"] = @"message";
-    parameters[@"event[body]"] = self.body;    
+    parameters[@"event[body]"] = self.body;
     if(self.subject){
         parameters[@"event[subject]"] = self.subject;
     }
@@ -194,9 +194,46 @@ NSString *LNEventAppActivityViewed(NSString *item){
 @end
 
 #pragma mark - Manager
+
+static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
+
+@interface LNQueuedEvent : NSObject <NSCoding>
+@property (strong, nonatomic) NSString *path;
+@property (strong, nonatomic) NSDictionary *parameters;
++ (id)queuedEventWithPath:(NSString *)path andParameters:(NSDictionary *)parameters;
+@end
+
+@implementation LNQueuedEvent
+
++ (id)queuedEventWithPath:(NSString *)path andParameters:(NSDictionary *)parameters{
+    return [[[self class] alloc] initWithPath:path andParameters:parameters];
+}
+
+- (void)encodeWithCoder:(NSCoder *)aCoder{
+    [aCoder encodeObject:self.path forKey:@"path"];
+    [aCoder encodeObject:self.parameters forKey:@"parameters"];
+}
+
+- (id)initWithCoder:(NSCoder *)aDecoder{
+    NSString *path = [aDecoder decodeObjectForKey:@"path"];
+    NSDictionary *parameters = [aDecoder decodeObjectForKey:@"parameters"];
+    return [self initWithPath:path andParameters:parameters];
+}
+
+- (id)initWithPath:(NSString *)path andParameters:(NSDictionary *)parameters{
+    if((self = [super init])){
+        self.path = path;
+        self.parameters = parameters;
+    }
+    return self;
+}
+
+@end
+
 @interface LNManager()
 @property (strong, nonatomic) NSString *code;
 @property (strong, nonatomic) NSString *secret;
+@property (strong, nonatomic) NSTimer *timer;
 @end
 
 @implementation LNManager
@@ -210,35 +247,141 @@ NSString *LNEventAppActivityViewed(NSString *item){
     return sharedInstance;
 }
 
+- (id)init{
+    if((self = [super init])){
+        [self startTimer];
+
+        [[NSFileManager defaultManager] createDirectoryAtPath:[self queuedEventsDirectoryPath]
+                                  withIntermediateDirectories:YES attributes:nil error:nil];
+
+        [[NSNotificationCenter defaultCenter]
+         addObserver:self selector:@selector(stopTimer)
+         name:UIApplicationWillResignActiveNotification object:nil];
+        [[NSNotificationCenter defaultCenter]
+         addObserver:self selector:@selector(startTimer)
+         name:UIApplicationWillEnterForegroundNotification object:nil];
+    }
+    return self;
+}
+
+- (void)startTimer{
+    [self stopTimer];
+    self.timer = [NSTimer scheduledTimerWithTimeInterval:5*60 target:self selector:@selector(postQueuedEvents)
+                                                userInfo:nil repeats:YES];
+}
+
+- (void)stopTimer{
+    [self.timer invalidate];
+}
+
+- (NSString *)queuedEventsDirectoryPath{
+    NSURL *applicationSupport =
+    [[NSFileManager defaultManager]
+     URLForDirectory:NSApplicationSupportDirectory
+     inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:nil];
+    return [[applicationSupport path] stringByAppendingPathComponent:kEventQueueName];
+}
+
+- (void)postQueuedEvents{
+    if([[self httpClient] networkReachabilityStatus] == AFNetworkReachabilityStatusNotReachable){
+        return;
+    }
+    
+    __weak __typeof__(self) wself = self;
+    [self dispatchOnSynchronousQueue:^{
+        NSArray *eventFiles = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:[self queuedEventsDirectoryPath] error:nil];
+        if([eventFiles count] == 0){
+            return;
+        }
+
+        NSMutableArray *filesAndProperties = [NSMutableArray arrayWithCapacity:[eventFiles count]];
+        [eventFiles enumerateObjectsUsingBlock:^(NSString *eventFile, NSUInteger idx, BOOL *stop){
+            if([eventFile hasSuffix:@"plist"]){
+                NSString *eventFilePath = [[self queuedEventsDirectoryPath] stringByAppendingPathComponent:eventFile];
+                NSDictionary *properties = [[NSFileManager defaultManager] attributesOfItemAtPath:eventFilePath error:nil];
+                NSDate *modDate = [properties objectForKey:NSFileModificationDate];
+                [filesAndProperties addObject:@{@"path":eventFilePath, @"modData":modDate}];
+            }
+        }];
+
+        NSArray *sortedEventFiles =
+        [filesAndProperties sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
+            return [[obj2 objectForKey:@"modData"] compare:[obj1 objectForKey:@"modData"]];
+        }];
+
+        [sortedEventFiles enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop){
+            NSString *eventFilePath = [obj objectForKey:@"path"];
+            LNQueuedEvent *queuedEvent = (LNQueuedEvent *)[NSKeyedUnarchiver unarchiveObjectWithFile:eventFilePath];
+            NSOperation *operation =
+            [wself operationWithMethod:@"POST" path:queuedEvent.path parameters:queuedEvent.parameters
+                    andCompletionBlock:^(id JSON, NSError *error){
+                        NSAssert(!error, @"Request failed with error: %@", error);
+                        if([[JSON objectForKey:@"success"] boolValue]){
+                            [wself dispatchOnSynchronousQueue:^{
+                                [[NSFileManager defaultManager] removeItemAtPath:eventFilePath error:nil];
+                            }];
+                        }
+                    }];
+            [operation start];
+        }];
+    }];
+}
+
+- (void)addEventToQueueWithPath:(NSString *)path withParameters:(NSDictionary *)parameters{
+    [self dispatchOnSynchronousQueue:^{     
+        NSString *identifier = [[NSProcessInfo processInfo] globallyUniqueString];
+        LNQueuedEvent *queuedEvent = [LNQueuedEvent queuedEventWithPath:path andParameters:parameters];
+        NSString *eventFilePath = [[self queuedEventsDirectoryPath] stringByAppendingPathComponent:identifier];
+        eventFilePath = [eventFilePath stringByAppendingPathExtension:@"plist"];
+        [NSKeyedArchiver archiveRootObject:queuedEvent toFile:eventFilePath];
+    }];
+}
+
+- (void)dispatchOnSynchronousQueue:(void (^)())block{
+    static dispatch_queue_t queue;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        queue = dispatch_queue_create([kEventQueueName UTF8String], DISPATCH_QUEUE_SERIAL);
+    });
+    dispatch_async(queue, block);
+}
+
 - (void)setCode:(NSString *)code andSecret:(NSString *)secret{
     self.code = code;
     self.secret = secret;
 }
 
-- (void)postEvent:(LNEvents *)event forCurrentPersonWithCompletionBlock:(void (^)(id, NSError *))completionBlock{
-    [self postEvent:event forPerson:self.currentPerson withCompletionBlock:completionBlock];
+- (void)postEventForCurrentPerson:(LNEvents *)event{
+    [self postEvent:event forPerson:self.currentPerson];
 }
 
-- (void)postEvent:(LNEvents *)event forPerson:(LNPerson *)person
-withCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock{
+- (void)postEvent:(LNEvents *)event forPerson:(LNPerson *)person{
     NSMutableDictionary *parameters = [[event parameters] mutableCopy];
     [parameters addEntriesFromDictionary:[person parameters]];
-    [self requestWithMethod:@"POST" path:@"/api/v2/events" parameters:parameters andCompletionBlock:completionBlock];
+    [self addEventToQueueWithPath:@"/api/v2/events" withParameters:parameters];
 }
 
-- (void)updateCurrentPersonWithCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock{
-    [self updatePerson:self.currentPerson withCompletionBlock:completionBlock];
+- (void)updateCurrentPerson{
+    [self updatePerson:self.currentPerson];
 }
 
-- (void)updatePerson:(LNPerson *)person withCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock{
-    [self requestWithMethod:@"POST" path:@"/api/v2/people" parameters:[person parameters] andCompletionBlock:completionBlock];
+- (void)updatePerson:(LNPerson *)person{
+    [self addEventToQueueWithPath:@"/api/v2/people" withParameters:[person parameters]];
 }
 
-- (void)requestWithMethod:(NSString *)method path:(NSString *)path parameters:(NSDictionary *)parameters
-       andCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock{
-    NSAssert(self.code && self.secret, @"The code and secret must be set.");
-    AFHTTPClient *httpClient = [[AFHTTPClient alloc] initWithBaseURL:
-                                [NSURL URLWithString:@"https://api.lessneglect.com"]];
+- (AFHTTPClient *)httpClient{
+    return [AFHTTPClient clientWithBaseURL:[NSURL URLWithString:@"https://api.lessneglect.com"]];
+}
+
+- (NSOperation *)operationWithMethod:(NSString *)method path:(NSString *)path parameters:(NSDictionary *)parameters
+                  andCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock{
+    NSAssert(self.code || self.secret, @"The code and secret must be set.");
+    
+    AFHTTPClient *httpClient = [self httpClient];
+    if(httpClient.networkReachabilityStatus == AFNetworkReachabilityStatusNotReachable){
+        return nil;
+    }
+
     [httpClient setAuthorizationHeaderWithUsername:self.code password:self.secret];
     NSURLRequest *request = [httpClient requestWithMethod:method path:path parameters:parameters];
 
@@ -250,15 +393,20 @@ withCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock{
     } failure:^(AFHTTPRequestOperation *blockOperation, NSError *error){
         completionBlock(nil, error);
     }];
-    [operation start];
-    
-//    [[AFJSONRequestOperation
-//      JSONRequestOperationWithRequest:request
-//      success:^(NSURLRequest *blockRequest, NSHTTPURLResponse *response, id JSON){
-//        completionBlock(JSON, nil);
-//    } failure:^(NSURLRequest *blockRequest, NSHTTPURLResponse *response, NSError *error, id JSON){
-//        completionBlock(nil, error);
-//    }] start];
+
+    //    [[AFJSONRequestOperation
+    //      JSONRequestOperationWithRequest:request
+    //      success:^(NSURLRequest *blockRequest, NSHTTPURLResponse *response, id JSON){
+    //        completionBlock(JSON, nil);
+    //    } failure:^(NSURLRequest *blockRequest, NSHTTPURLResponse *response, NSError *error, id JSON){
+    //        completionBlock(nil, error);
+    //    }] start];
+    return operation;
+}
+
+- (void)dealloc{
+    [self stopTimer];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 @end

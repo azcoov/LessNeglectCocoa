@@ -18,25 +18,19 @@
     [[LNManager sharedInstance] setCurrentPerson:currentPerson];
 
     // wizard step 1
-//    LNActionEvent *registerEvent = [LNActionEvent eventWithName:LNEventActionRegistered];
-//    [[LNManager sharedInstance] postEvent:registerEvent forCurrentPersonWithCompletionBlock:^(id JSON, NSError *error){
-//        NSLog(@"%@", error ?: JSON);
-//    }];
+    LNActionEvent *registerEvent = [LNActionEvent eventWithName:LNEventActionRegistered];
+    [[LNManager sharedInstance] postEventForCurrentPerson:registerEvent];
 
     // wizard step 2
-//    LNActionEvent *uploadEvent = [LNActionEvent eventWithName:LNEventAppActivityUploaded(@"media")];
-//    [uploadEvent addLinkWithName:@"thumbnail_url" andURL:[NSURL URLWithString:@"https://foliohd.com/image/square/100764.jpg"]];
-//    [uploadEvent addLinkWithName:@"link_url" andURL:[NSURL URLWithString:@"https://foliohd.com/image/hd/100764.jpg"]];
-//    [[LNManager sharedInstance] postEvent:uploadEvent forCurrentPersonWithCompletionBlock:^(id JSON, NSError *error){
-//        NSLog(@"%@", error ?: JSON);
-//    }];
+    LNActionEvent *uploadEvent = [LNActionEvent eventWithName:LNEventAppActivityUploaded(@"media")];
+    [uploadEvent addLinkWithName:@"thumbnail_url" andURL:[NSURL URLWithString:@"https://foliohd.com/image/square/100764.jpg"]];
+    [uploadEvent addLinkWithName:@"link_url" andURL:[NSURL URLWithString:@"https://foliohd.com/image/hd/100764.jpg"]];
+    [[LNManager sharedInstance] postEventForCurrentPerson:uploadEvent];
 
     // wizard step 3
-//    LNMessageEvent *messageEvent =
-//    [LNMessageEvent messageEventWithBody:@"Help me, guys" andSubject:@"I can not figure out how to upload. Please help me."];
-//    [[LNManager sharedInstance] postEvent:messageEvent forCurrentPersonWithCompletionBlock:^(id JSON, NSError *error){
-//        NSLog(@"%@", error ?: JSON);
-//    }];
+    LNMessageEvent *messageEvent =
+    [LNMessageEvent messageEventWithBody:@"Help me, guys" andSubject:@"I can not figure out how to upload. Please help me."];
+    [[LNManager sharedInstance] postEventForCurrentPerson:messageEvent];
 
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     self.window.rootViewController = [[UIViewController alloc] init];
