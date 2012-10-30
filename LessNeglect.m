@@ -223,7 +223,7 @@ NSString *LNEventAppActivityViewed(NSString *item){
 withCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock{
     NSMutableDictionary *parameters = [[event parameters] mutableCopy];
     [parameters addEntriesFromDictionary:[person parameters]];
-    [self requestWithMethod:@"POST" path:@"/api/v2/events" andParameters:parameters withCompletionBlock:completionBlock];
+    [self requestWithMethod:@"POST" path:@"/api/v2/events" parameters:parameters andCompletionBlock:completionBlock];
 }
 
 - (void)updateCurrentPersonWithCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock{
@@ -231,11 +231,11 @@ withCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock{
 }
 
 - (void)updatePerson:(LNPerson *)person withCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock{
-    [self requestWithMethod:@"POST" path:@"/api/v2/people" andParameters:[person parameters] withCompletionBlock:completionBlock];
+    [self requestWithMethod:@"POST" path:@"/api/v2/people" parameters:[person parameters] andCompletionBlock:completionBlock];
 }
 
-- (void)requestWithMethod:(NSString *)method path:(NSString *)path andParameters:(NSDictionary *)parameters
-      withCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock{
+- (void)requestWithMethod:(NSString *)method path:(NSString *)path parameters:(NSDictionary *)parameters
+       andCompletionBlock:(void(^)(id JSON, NSError *error))completionBlock{
     NSAssert(self.code && self.secret, @"The code and secret must be set.");
     AFHTTPClient *httpClient = [[AFHTTPClient alloc] initWithBaseURL:
                                 [NSURL URLWithString:@"https://api.lessneglect.com"]];
