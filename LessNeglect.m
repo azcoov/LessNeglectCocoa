@@ -173,8 +173,10 @@ NSString *LNEventAppActivityViewed(NSString *item){
 
 - (NSDictionary *)parameters{
     NSMutableDictionary *parameters = [NSMutableDictionary dictionary];
-    parameters[@"person[name]"] = self.name;
-    parameters[@"person[email]"] = self.email;
+    parameters[@"person[email]"] = self.email;    
+    if(self.name){
+        parameters[@"person[name]"] = self.name;
+    }
     if(self.externalIdentifier){
         parameters[@"person[external_identifier]"] = self.externalIdentifier;
     }
