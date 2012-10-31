@@ -234,6 +234,7 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
 @property (strong, nonatomic) NSString *code;
 @property (strong, nonatomic) NSString *secret;
 @property (strong, nonatomic) NSTimer *timer;
+@property (strong, nonatomic) NSMutableSet *currentlySyncing;
 @end
 
 @implementation LNManager
@@ -250,6 +251,7 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
 - (id)init{
     if((self = [super init])){
         [self startTimer];
+        self.currentlySyncing = [NSMutableSet set];
 
         [[NSFileManager defaultManager] createDirectoryAtPath:[self queuedEventsDirectoryPath]
                                   withIntermediateDirectories:YES attributes:nil error:nil];
@@ -297,10 +299,14 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
         NSMutableArray *filesAndProperties = [NSMutableArray arrayWithCapacity:[eventFiles count]];
         [eventFiles enumerateObjectsUsingBlock:^(NSString *eventFile, NSUInteger idx, BOOL *stop){
             if([eventFile hasSuffix:@"plist"]){
-                NSString *eventFilePath = [[self queuedEventsDirectoryPath] stringByAppendingPathComponent:eventFile];
-                NSDictionary *properties = [[NSFileManager defaultManager] attributesOfItemAtPath:eventFilePath error:nil];
-                NSDate *modDate = [properties objectForKey:NSFileModificationDate];
-                [filesAndProperties addObject:@{@"path":eventFilePath, @"modData":modDate}];
+                NSString *identifier = [eventFile stringByDeletingPathExtension];
+                if(![wself.currentlySyncing containsObject:identifier]){
+                    NSString *eventFilePath = [[self queuedEventsDirectoryPath] stringByAppendingPathComponent:eventFile];
+                    NSDictionary *properties = [[NSFileManager defaultManager] attributesOfItemAtPath:eventFilePath error:nil];
+                    NSDate *modDate = [properties objectForKey:NSFileModificationDate];
+                    [filesAndProperties addObject:@{@"path":eventFilePath, @"modData":modDate}];
+                    [wself.currentlySyncing addObject:identifier];
+                }
             }
         }];
 
@@ -316,14 +322,13 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
             [wself operationWithMethod:@"POST" path:queuedEvent.path parameters:queuedEvent.parameters
                     andCompletionBlock:^(id JSON, NSError *error){
                         NSAssert(!error, @"Request failed with error: %@", error);
-                        if([[JSON objectForKey:@"success"] boolValue]){
-                            // TODO: it is possible that postQueuedEvents could be called and added to the queue
-                            // before the files from the previous run have all ben remvoed, this would result in
-                            // duplicate events...
-                            [wself dispatchOnSynchronousQueue:^{
+                        [wself dispatchOnSynchronousQueue:^{
+                            if([[JSON objectForKey:@"success"] boolValue]){
                                 [[NSFileManager defaultManager] removeItemAtPath:eventFilePath error:nil];
-                            }];
-                        }
+                            }
+                            NSString *identifier = [[eventFilePath lastPathComponent] stringByDeletingPathExtension];
+                            [wself.currentlySyncing removeObject:identifier];
+                        }];
                     }];
             [operation start];
         }];
