@@ -71,8 +71,9 @@ NSString *LNEventAppActivityViewed(NSString *item){
 }
 
 - (id)init{
-    if(self = [super init]){
+    if((self = [super init])){
         self.magnitude = NSNotFound;
+        self.timestamp = [NSDate date];        
     }
     return self;
 }
@@ -83,6 +84,10 @@ NSString *LNEventAppActivityViewed(NSString *item){
     if(self.magnitude != NSNotFound){
         parameters[@"event[magnitude]"] = @(self.magnitude);
     }
+    if(self.externalIdentifier){
+        parameters[@"event[external_identifier]"] = self.externalIdentifier;
+    }
+    parameters[@"event[timestamp]"] = @([self.timestamp timeIntervalSince1970]);
     return [NSDictionary dictionaryWithDictionary:parameters];
 }
 
@@ -125,7 +130,7 @@ NSString *LNEventAppActivityViewed(NSString *item){
 }
 
 - (id)initWithBody:(NSString *)body andSubject:(NSString *)subject{
-    if(self = [super init]){
+    if((self = [super init])){
         self.body = body;
         self.subject = subject;
     }
@@ -139,6 +144,7 @@ NSString *LNEventAppActivityViewed(NSString *item){
     if(self.subject){
         parameters[@"event[subject]"] = self.subject;
     }
+    parameters[@"event[timestamp]"] = @([self.timestamp timeIntervalSince1970]);    
     return [NSDictionary dictionaryWithDictionary:parameters];
 }
 
@@ -149,6 +155,12 @@ NSString *LNEventAppActivityViewed(NSString *item){
 
 + (id)personWithName:(NSString *)name andEmail:(NSString *)email{
     return [[[self class] alloc] initWithName:name andEmail:email];
+}
+
+- (void)updateProperties:(NSDictionary *)properties{
+    NSMutableDictionary *mutableProperties = [self.properties mutableCopy];
+    [mutableProperties addEntriesFromDictionary:properties];
+    self.properties = [NSDictionary dictionaryWithDictionary:properties];
 }
 
 - (id)initWithName:(NSString *)name andEmail:(NSString *)email{
@@ -392,22 +404,14 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
     [httpClient setAuthorizationHeaderWithUsername:self.code password:self.secret];
     NSURLRequest *request = [httpClient requestWithMethod:method path:path parameters:parameters];
 
-    // The responce from the api is not application/json
-    AFHTTPRequestOperation *operation =
-    [[AFHTTPRequestOperation alloc] initWithRequest:request];
-    [operation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *blockOperation, id responseObject){
-        completionBlock([NSJSONSerialization JSONObjectWithData:blockOperation.responseData options:0 error:nil], nil);
-    } failure:^(AFHTTPRequestOperation *blockOperation, NSError *error){
+    NSOperation *operation =
+    [AFJSONRequestOperation
+      JSONRequestOperationWithRequest:request
+      success:^(NSURLRequest *blockRequest, NSHTTPURLResponse *response, id JSON){
+        completionBlock(JSON, nil);
+    } failure:^(NSURLRequest *blockRequest, NSHTTPURLResponse *response, NSError *error, id JSON){
         completionBlock(nil, error);
     }];
-
-    //    [[AFJSONRequestOperation
-    //      JSONRequestOperationWithRequest:request
-    //      success:^(NSURLRequest *blockRequest, NSHTTPURLResponse *response, id JSON){
-    //        completionBlock(JSON, nil);
-    //    } failure:^(NSURLRequest *blockRequest, NSHTTPURLResponse *response, NSError *error, id JSON){
-    //        completionBlock(nil, error);
-    //    }] start];
     return operation;
 }
 

@@ -42,6 +42,8 @@ extern NSString *LNEventAppActivityViewed(NSString *item);
 @interface LNEvents : NSObject
 @property (strong, nonatomic) NSString *name;
 @property (nonatomic) NSUInteger magnitude;
+@property (strong, nonatomic) NSDate *timestamp;
+@property (strong, nonatomic) NSString *externalIdentifier;
 + (id)eventWithName:(NSString *)name;
 - (id)initWithName:(NSString *)name;
 @end
@@ -67,6 +69,7 @@ extern NSString *LNEventAppActivityViewed(NSString *item);
 @property (strong, nonatomic) NSDictionary *properties;
 + (id)personWithName:(NSString *)name andEmail:(NSString *)email;
 - (id)initWithName:(NSString *)name andEmail:(NSString *)email;
+- (void)updateProperties:(NSDictionary *)properties;
 @end
 
 #pragma mark - Action Link
