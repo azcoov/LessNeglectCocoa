@@ -285,6 +285,9 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
 }
 
 - (void)postQueuedEvents{
+    if(!self.code || !self.secret){
+        return;
+    }
     if([[self httpClient] networkReachabilityStatus] == AFNetworkReachabilityStatusNotReachable){
         return;
     }
