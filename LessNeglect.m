@@ -172,15 +172,15 @@ NSString *LNEventAppActivityViewed(NSString *item){
     return self;
 }
 
-- (void)setGravatarAvatar{
+- (void)useGravatarAvatar{
     NSString *email = [self.email lowercaseString];
     email = [email stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
 
     const char *ptr = [email UTF8String];
     unsigned char md5Buffer[CC_MD5_DIGEST_LENGTH];
     CC_MD5(ptr, strlen(ptr), md5Buffer);
-    NSMutableString *md5 = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH * 2];
-    for(int i = 0; i < CC_MD5_DIGEST_LENGTH; i++){
+    NSMutableString *md5 = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH*2];
+    for(NSUInteger i = 0; i < CC_MD5_DIGEST_LENGTH; i++){
 		[md5 appendFormat:@"%02x", md5Buffer[i]];
     }
 

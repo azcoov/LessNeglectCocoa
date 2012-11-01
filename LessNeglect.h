@@ -70,7 +70,7 @@ extern NSString *LNEventAppActivityViewed(NSString *item);
 + (id)personWithName:(NSString *)name andEmail:(NSString *)email;
 - (id)initWithName:(NSString *)name andEmail:(NSString *)email;
 - (void)updateProperties:(NSDictionary *)properties;
-- (void)setGravatarAvatar;
+- (void)useGravatarAvatar;
 @end
 
 #pragma mark - Action Link
