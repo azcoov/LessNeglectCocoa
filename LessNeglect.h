@@ -85,6 +85,8 @@ extern NSString *LNEventAppActivityViewed(NSString *item);
 
 @property (strong, nonatomic) LNPerson *currentPerson;
 
+@property (nonatomic) BOOL logEvents;
+
 + (id)sharedInstance;
 
 - (void)setCode:(NSString *)code andSecret:(NSString *)secret;

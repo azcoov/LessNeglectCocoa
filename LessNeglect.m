@@ -223,9 +223,12 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
     return [[[self class] alloc] initWithPath:path andParameters:parameters];
 }
 
-- (void)encodeWithCoder:(NSCoder *)aCoder{
-    [aCoder encodeObject:self.path forKey:@"path"];
-    [aCoder encodeObject:self.parameters forKey:@"parameters"];
+- (id)initWithPath:(NSString *)path andParameters:(NSDictionary *)parameters{
+    if((self = [super init])){
+        self.path = path;
+        self.parameters = parameters;
+    }
+    return self;
 }
 
 - (id)initWithCoder:(NSCoder *)aDecoder{
@@ -234,12 +237,13 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
     return [self initWithPath:path andParameters:parameters];
 }
 
-- (id)initWithPath:(NSString *)path andParameters:(NSDictionary *)parameters{
-    if((self = [super init])){
-        self.path = path;
-        self.parameters = parameters;
-    }
-    return self;
+- (void)encodeWithCoder:(NSCoder *)aCoder{
+    [aCoder encodeObject:self.path forKey:@"path"];
+    [aCoder encodeObject:self.parameters forKey:@"parameters"];
+}
+
+- (NSString *)description{
+    return [NSString stringWithFormat:@"%@ %@", self.path, self.parameters];
 }
 
 @end
@@ -264,30 +268,15 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
 
 - (id)init{
     if((self = [super init])){
-        [self startTimer];
         self.currentlySyncing = [NSMutableSet set];
 
         [[NSFileManager defaultManager] createDirectoryAtPath:[self queuedEventsDirectoryPath]
                                   withIntermediateDirectories:YES attributes:nil error:nil];
 
-        [[NSNotificationCenter defaultCenter]
-         addObserver:self selector:@selector(stopTimer)
-         name:UIApplicationWillResignActiveNotification object:nil];
-        [[NSNotificationCenter defaultCenter]
-         addObserver:self selector:@selector(startTimer)
-         name:UIApplicationWillEnterForegroundNotification object:nil];
+        [NSTimer scheduledTimerWithTimeInterval:5*60 target:self selector:@selector(postQueuedEvents)
+                                       userInfo:nil repeats:YES];
     }
     return self;
-}
-
-- (void)startTimer{
-    [self stopTimer];
-    self.timer = [NSTimer scheduledTimerWithTimeInterval:5*60 target:self selector:@selector(postQueuedEvents)
-                                                userInfo:nil repeats:YES];
-}
-
-- (void)stopTimer{
-    [self.timer invalidate];
 }
 
 - (NSString *)queuedEventsDirectoryPath{
@@ -359,6 +348,9 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
         NSString *eventFilePath = [[self queuedEventsDirectoryPath] stringByAppendingPathComponent:identifier];
         eventFilePath = [eventFilePath stringByAppendingPathExtension:@"plist"];
         [NSKeyedArchiver archiveRootObject:queuedEvent toFile:eventFilePath];
+        if(self.logEvents){
+            NSLog(@"%@: %@", NSStringFromClass([self class]), queuedEvent);
+        }
     }];
 }
 
@@ -377,20 +369,29 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
 }
 
 - (void)postEventForCurrentPerson:(LNEvents *)event{
+    if(self.currentPerson == nil){
+        return;
+    }
     [self postEvent:event forPerson:self.currentPerson];
 }
 
 - (void)postEvent:(LNEvents *)event forPerson:(LNPerson *)person{
+    NSParameterAssert(event);
+    NSParameterAssert(person);
     NSMutableDictionary *parameters = [[event parameters] mutableCopy];
     [parameters addEntriesFromDictionary:[person parameters]];
     [self addEventToQueueWithPath:@"/api/v2/events" withParameters:parameters];
 }
 
 - (void)updateCurrentPerson{
+    if(self.currentPerson == nil){
+        return;
+    }
     [self updatePerson:self.currentPerson];
 }
 
 - (void)updatePerson:(LNPerson *)person{
+    NSParameterAssert(person);
     [self addEventToQueueWithPath:@"/api/v2/people" withParameters:[person parameters]];
 }
 
@@ -415,11 +416,6 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
         completionBlock(nil, error);
     }];
     return operation;
-}
-
-- (void)dealloc{
-    [self stopTimer];
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 @end
