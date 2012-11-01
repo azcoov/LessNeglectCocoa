@@ -176,6 +176,10 @@ NSString *LNEventAppActivityViewed(NSString *item){
     NSString *email = [self.email lowercaseString];
     email = [email stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
 
+    if([email length] == 0){
+        return;
+    }
+
     const char *ptr = [email UTF8String];
     unsigned char md5Buffer[CC_MD5_DIGEST_LENGTH];
     CC_MD5(ptr, strlen(ptr), md5Buffer);
