@@ -6,6 +6,7 @@
 //  Copyright (c) 2012 David Keegan. All rights reserved.
 //
 
+#import <CommonCrypto/CommonDigest.h>
 #import "LessNeglect.h"
 #import "AFHTTPClient.h"
 #import "AFJSONRequestOperation.h"
@@ -169,6 +170,22 @@ NSString *LNEventAppActivityViewed(NSString *item){
         self.email = email;
     }
     return self;
+}
+
+- (void)setGravatarAvatar{
+    NSString *email = [self.email lowercaseString];
+    email = [email stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+
+    const char *ptr = [email UTF8String];
+    unsigned char md5Buffer[CC_MD5_DIGEST_LENGTH];
+    CC_MD5(ptr, strlen(ptr), md5Buffer);
+    NSMutableString *md5 = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH * 2];
+    for(int i = 0; i < CC_MD5_DIGEST_LENGTH; i++){
+		[md5 appendFormat:@"%02x", md5Buffer[i]];
+    }
+
+    NSString *url = [NSString stringWithFormat:@"http://www.gravatar.com/avatar/%@", md5];
+    [self updateProperties:@{LNPersonPropertyAvatarURL:url}];
 }
 
 - (NSDictionary *)parameters{
