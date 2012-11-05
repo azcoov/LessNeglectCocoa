@@ -339,7 +339,7 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
 
         NSArray *sortedEventFiles =
         [filesAndProperties sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
-            return [[obj2 objectForKey:@"modData"] compare:[obj1 objectForKey:@"modData"]];
+            return [[obj1 objectForKey:@"modData"] compare:[obj2 objectForKey:@"modData"]];
         }];
 
         [sortedEventFiles enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop){
