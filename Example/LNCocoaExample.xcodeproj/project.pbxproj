@@ -25,6 +25,12 @@
 		7341B313163F9D3A00F03CBA /* UIImageView+AFNetworking.m in Sources */ = {isa = PBXBuildFile; fileRef = 7341B30A163F9D3A00F03CBA /* UIImageView+AFNetworking.m */; };
 		7341B33A163FAD6100F03CBA /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7341B339163FAD6100F03CBA /* SystemConfiguration.framework */; };
 		7341B33C163FAD6700F03CBA /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7341B33B163FAD6700F03CBA /* MobileCoreServices.framework */; };
+		839542F11647AF09005E5462 /* DEComposeRuledView.m in Sources */ = {isa = PBXBuildFile; fileRef = 839542E71647AF09005E5462 /* DEComposeRuledView.m */; };
+		839542F21647AF09005E5462 /* DEComposeTextView.m in Sources */ = {isa = PBXBuildFile; fileRef = 839542E91647AF09005E5462 /* DEComposeTextView.m */; };
+		839542F31647AF09005E5462 /* REComposeBackgroundView.m in Sources */ = {isa = PBXBuildFile; fileRef = 839542EB1647AF09005E5462 /* REComposeBackgroundView.m */; };
+		839542F41647AF09005E5462 /* REComposeSheetView.m in Sources */ = {isa = PBXBuildFile; fileRef = 839542ED1647AF09005E5462 /* REComposeSheetView.m */; };
+		839542F51647AF09005E5462 /* REComposeViewController.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 839542EE1647AF09005E5462 /* REComposeViewController.bundle */; };
+		839542F61647AF09005E5462 /* REComposeViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 839542F01647AF09005E5462 /* REComposeViewController.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -60,6 +66,17 @@
 		7341B30A163F9D3A00F03CBA /* UIImageView+AFNetworking.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIImageView+AFNetworking.m"; sourceTree = "<group>"; };
 		7341B339163FAD6100F03CBA /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		7341B33B163FAD6700F03CBA /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
+		839542E61647AF09005E5462 /* DEComposeRuledView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DEComposeRuledView.h; sourceTree = "<group>"; };
+		839542E71647AF09005E5462 /* DEComposeRuledView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DEComposeRuledView.m; sourceTree = "<group>"; };
+		839542E81647AF09005E5462 /* DEComposeTextView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DEComposeTextView.h; sourceTree = "<group>"; };
+		839542E91647AF09005E5462 /* DEComposeTextView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DEComposeTextView.m; sourceTree = "<group>"; };
+		839542EA1647AF09005E5462 /* REComposeBackgroundView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = REComposeBackgroundView.h; sourceTree = "<group>"; };
+		839542EB1647AF09005E5462 /* REComposeBackgroundView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = REComposeBackgroundView.m; sourceTree = "<group>"; };
+		839542EC1647AF09005E5462 /* REComposeSheetView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = REComposeSheetView.h; sourceTree = "<group>"; };
+		839542ED1647AF09005E5462 /* REComposeSheetView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = REComposeSheetView.m; sourceTree = "<group>"; };
+		839542EE1647AF09005E5462 /* REComposeViewController.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = REComposeViewController.bundle; sourceTree = "<group>"; };
+		839542EF1647AF09005E5462 /* REComposeViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = REComposeViewController.h; sourceTree = "<group>"; };
+		839542F01647AF09005E5462 /* REComposeViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = REComposeViewController.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -117,6 +134,7 @@
 				7341B2B5163F2FD200F03CBA /* LNAppDelegate.m */,
 				7341B2B3163F2FD200F03CBA /* Default-568h@2x.png */,
 				7341B2B7163F2FD200F03CBA /* LNCocoaExample-Prefix.pch */,
+				839542E51647AF09005E5462 /* REComposeViewController */,
 				7341B2F7163F9D3A00F03CBA /* AFNetworking */,
 			);
 			name = LNCocoaExample;
@@ -147,6 +165,25 @@
 			);
 			name = AFNetworking;
 			path = ../AFNetworking/AFNetworking;
+			sourceTree = "<group>";
+		};
+		839542E51647AF09005E5462 /* REComposeViewController */ = {
+			isa = PBXGroup;
+			children = (
+				839542E61647AF09005E5462 /* DEComposeRuledView.h */,
+				839542E71647AF09005E5462 /* DEComposeRuledView.m */,
+				839542E81647AF09005E5462 /* DEComposeTextView.h */,
+				839542E91647AF09005E5462 /* DEComposeTextView.m */,
+				839542EA1647AF09005E5462 /* REComposeBackgroundView.h */,
+				839542EB1647AF09005E5462 /* REComposeBackgroundView.m */,
+				839542EC1647AF09005E5462 /* REComposeSheetView.h */,
+				839542ED1647AF09005E5462 /* REComposeSheetView.m */,
+				839542EE1647AF09005E5462 /* REComposeViewController.bundle */,
+				839542EF1647AF09005E5462 /* REComposeViewController.h */,
+				839542F01647AF09005E5462 /* REComposeViewController.m */,
+			);
+			name = REComposeViewController;
+			path = ../REComposeViewController/REComposeViewController;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -202,6 +239,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7341B2BC163F2FD200F03CBA /* Default-568h@2x.png in Resources */,
+				839542F51647AF09005E5462 /* REComposeViewController.bundle in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -224,6 +262,11 @@
 				7341B311163F9D3A00F03CBA /* AFURLConnectionOperation.m in Sources */,
 				7341B312163F9D3A00F03CBA /* AFXMLRequestOperation.m in Sources */,
 				7341B313163F9D3A00F03CBA /* UIImageView+AFNetworking.m in Sources */,
+				839542F11647AF09005E5462 /* DEComposeRuledView.m in Sources */,
+				839542F21647AF09005E5462 /* DEComposeTextView.m in Sources */,
+				839542F31647AF09005E5462 /* REComposeBackgroundView.m in Sources */,
+				839542F41647AF09005E5462 /* REComposeSheetView.m in Sources */,
+				839542F61647AF09005E5462 /* REComposeViewController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
