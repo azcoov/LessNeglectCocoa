@@ -376,12 +376,15 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
 }
 
 - (void)dispatchOnSynchronousQueue:(void (^)())block{
+    NSParameterAssert(block);
     static dispatch_queue_t queue;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
         queue = dispatch_queue_create([kEventQueueName UTF8String], DISPATCH_QUEUE_SERIAL);
     });
-    dispatch_async(queue, block);
+    if(queue){
+        dispatch_async(queue, block);
+    }
 }
 
 - (void)setCode:(NSString *)code andSecret:(NSString *)secret{
