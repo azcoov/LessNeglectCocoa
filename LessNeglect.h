@@ -92,9 +92,6 @@ extern NSString *LNEventAppActivityViewed(NSString *item);
 
 - (void)setCode:(NSString *)code andSecret:(NSString *)secret;
 
-- (void)updateCurrentPerson;
-- (void)updatePerson:(LNPerson *)person;
-
 - (void)postEventForCurrentPerson:(LNEvents *)event;
 - (void)postEvent:(LNEvents *)event forPerson:(LNPerson *)person;
 

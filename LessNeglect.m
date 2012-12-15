@@ -81,14 +81,14 @@ NSString *LNEventAppActivityViewed(NSString *item){
 
 - (NSDictionary *)parameters{
     NSMutableDictionary *parameters = [NSMutableDictionary dictionary];
-    parameters[@"event[name]"] = self.name;
+    parameters[@"[event][name]"] = self.name;
     if(self.magnitude != NSNotFound){
-        parameters[@"event[magnitude]"] = @(self.magnitude);
+        parameters[@"[event][magnitude]"] = @(self.magnitude);
     }
     if(self.externalIdentifier){
-        parameters[@"event[external_identifier]"] = self.externalIdentifier;
+        parameters[@"[event][external_identifier]"] = self.externalIdentifier;
     }
-    parameters[@"event[timestamp]"] = @([self.timestamp timeIntervalSince1970]);
+    parameters[@"[event][timestamp]"] = @([self.timestamp timeIntervalSince1970]);
     return [NSDictionary dictionaryWithDictionary:parameters];
 }
 
@@ -104,16 +104,16 @@ NSString *LNEventAppActivityViewed(NSString *item){
 
 - (NSDictionary *)parameters{
     NSMutableDictionary *parameters = [[super parameters] mutableCopy];
-    parameters[@"event[klass]"] = @"actionevent";
+    parameters[@"[event][klass]"] = @"actionevent";
     if(self.note){
-        parameters[@"event[note]"] = self.note;
+        parameters[@"[event][note]"] = self.note;
     }
     NSUInteger linkIndex = 0;
     for(id obj in self.links){
         if([obj isKindOfClass:[LNActionLink class]]){
             LNActionLink *actionLink = (LNActionLink *)obj;
-            NSString *nameString = [NSString stringWithFormat:@"event[links][%lu][name]", (unsigned long)linkIndex];
-            NSString *hrefString = [NSString stringWithFormat:@"event[links][%lu][href]", (unsigned long)linkIndex];
+            NSString *nameString = [NSString stringWithFormat:@"[event][links][%lu][name]", (unsigned long)linkIndex];
+            NSString *hrefString = [NSString stringWithFormat:@"[event][links][%lu][href]", (unsigned long)linkIndex];
             parameters[nameString] = actionLink.name;
             parameters[hrefString] = actionLink.url;
             linkIndex++;
@@ -140,12 +140,12 @@ NSString *LNEventAppActivityViewed(NSString *item){
 
 - (NSDictionary *)parameters{
     NSMutableDictionary *parameters = [NSMutableDictionary dictionary];
-    parameters[@"event[klass]"] = @"message";
-    parameters[@"event[body]"] = self.body;
+    parameters[@"[event][klass]"] = @"message";
+    parameters[@"[event][body]"] = self.body;
     if(self.subject){
-        parameters[@"event[subject]"] = self.subject;
+        parameters[@"[event][subject]"] = self.subject;
     }
-    parameters[@"event[timestamp]"] = @([self.timestamp timeIntervalSince1970]);    
+    parameters[@"[event][timestamp]"] = @([self.timestamp timeIntervalSince1970]);
     return [NSDictionary dictionaryWithDictionary:parameters];
 }
 
@@ -194,16 +194,16 @@ NSString *LNEventAppActivityViewed(NSString *item){
 
 - (NSDictionary *)parameters{
     NSMutableDictionary *parameters = [NSMutableDictionary dictionary];
-    parameters[@"person[email]"] = self.email;    
+    parameters[@"[person][email]"] = self.email;    
     if(self.name){
-        parameters[@"person[name]"] = self.name;
+        parameters[@"[person][name]"] = self.name;
     }
     if(self.externalIdentifier){
-        parameters[@"person[external_identifier]"] = self.externalIdentifier;
+        parameters[@"[person][external_identifier]"] = self.externalIdentifier;
     }
     if([self.properties count]){
         [self.properties enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *obj, BOOL *stop){
-            parameters[[NSString stringWithFormat:@"person[properties][%@]", key]] = obj;
+            parameters[[NSString stringWithFormat:@"[person][properties][%@]", key]] = obj;
         }];
     }
     return [NSDictionary dictionaryWithDictionary:parameters];
@@ -230,43 +230,45 @@ NSString *LNEventAppActivityViewed(NSString *item){
 
 #pragma mark - Manager
 
+static NSTimeInterval const kEventQueueMinutes = 5;
 static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
 
+// For backwards compatability with old versions of the api
 @interface LNQueuedEvent : NSObject <NSCoding>
-@property (strong, nonatomic) NSString *path;
 @property (strong, nonatomic) NSDictionary *parameters;
-+ (id)queuedEventWithPath:(NSString *)path andParameters:(NSDictionary *)parameters;
 @end
 
 @implementation LNQueuedEvent
-
-+ (id)queuedEventWithPath:(NSString *)path andParameters:(NSDictionary *)parameters{
-    return [[[self class] alloc] initWithPath:path andParameters:parameters];
-}
-
-- (id)initWithPath:(NSString *)path andParameters:(NSDictionary *)parameters{
+- (id)initWithCoder:(NSCoder *)aDecoder{
+    // people path is no longer supported
+    NSString *path = [aDecoder decodeObjectForKey:@"path"];
+    if([path isEqualToString:@"/api/v2/people"]){
+        return nil;
+    }
+    
     if((self = [super init])){
-        self.path = path;
-        self.parameters = parameters;
+        NSMutableDictionary *parameters = [[aDecoder decodeObjectForKey:@"parameters"] mutableCopy];
+        for(NSString *key in [parameters allKeys]){
+            id value = parameters[key];
+            [parameters removeObjectForKey:key];
+            NSMutableArray *keyParts = [[key componentsSeparatedByString:@"["] mutableCopy];
+            if([keyParts count] == 0){
+                continue;
+            }
+            keyParts[0] = [NSString stringWithFormat:@"[%@]", keyParts[0]];
+            for(NSUInteger i = 1; i< [keyParts count]; ++i){
+                keyParts[i] = [NSString stringWithFormat:@"[%@", keyParts[i]];
+            }
+            [parameters setObject:value forKey:[keyParts componentsJoinedByString:@""]];
+        }
+        self.parameters = [NSDictionary dictionaryWithDictionary:parameters];
     }
     return self;
-}
 
-- (id)initWithCoder:(NSCoder *)aDecoder{
-    NSString *path = [aDecoder decodeObjectForKey:@"path"];
-    NSDictionary *parameters = [aDecoder decodeObjectForKey:@"parameters"];
-    return [self initWithPath:path andParameters:parameters];
 }
-
 - (void)encodeWithCoder:(NSCoder *)aCoder{
-    [aCoder encodeObject:self.path forKey:@"path"];
     [aCoder encodeObject:self.parameters forKey:@"parameters"];
 }
-
-- (NSString *)description{
-    return [NSString stringWithFormat:@"%@ %@", self.path, self.parameters];
-}
-
 @end
 
 @interface LNManager()
@@ -290,11 +292,9 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
 - (id)init{
     if((self = [super init])){
         self.currentlySyncing = [NSMutableSet set];
-
         [[NSFileManager defaultManager] createDirectoryAtPath:[self queuedEventsDirectoryPath]
                                   withIntermediateDirectories:YES attributes:nil error:nil];
-
-        [NSTimer scheduledTimerWithTimeInterval:5*60 target:self selector:@selector(postQueuedEvents)
+        [NSTimer scheduledTimerWithTimeInterval:kEventQueueMinutes*60 target:self selector:@selector(postQueuedEvents)
                                        userInfo:nil repeats:YES];
     }
     return self;
@@ -337,40 +337,50 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
             }
         }];
 
+        if([filesAndProperties count] == 0){
+            return;
+        }
+
         NSArray *sortedEventFiles =
         [filesAndProperties sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
             return [[obj1 objectForKey:@"modData"] compare:[obj2 objectForKey:@"modData"]];
         }];
 
+        NSMutableDictionary *eventDictionary = [NSMutableDictionary dictionary];
         [sortedEventFiles enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop){
-            NSString *eventFilePath = [obj objectForKey:@"path"];
-            LNQueuedEvent *queuedEvent = (LNQueuedEvent *)[NSKeyedUnarchiver unarchiveObjectWithFile:eventFilePath];
-            NSOperation *operation =
-            [wself operationWithMethod:@"POST" path:queuedEvent.path parameters:queuedEvent.parameters
-                    andCompletionBlock:^(id JSON, NSError *error){
-                        NSAssert(!error, @"Request failed with error: %@", error);
-                        [wself dispatchOnSynchronousQueue:^{
-                            if([[JSON objectForKey:@"success"] boolValue]){
-                                [[NSFileManager defaultManager] removeItemAtPath:eventFilePath error:nil];
-                            }
-                            NSString *identifier = [[eventFilePath lastPathComponent] stringByDeletingPathExtension];
-                            [wself.currentlySyncing removeObject:identifier];
-                        }];
-                    }];
-            [operation start];
+            id queuedEvent = [NSKeyedUnarchiver unarchiveObjectWithFile:[obj objectForKey:@"path"]];
+            if([queuedEvent isKindOfClass:[LNQueuedEvent class]]){
+                queuedEvent = [(LNQueuedEvent *)queuedEvent parameters];
+            }
+            [queuedEvent enumerateKeysAndObjectsUsingBlock:^(id key, id innerObj, BOOL *innerStop){
+                eventDictionary[[NSString stringWithFormat:@"data[%lu]%@", (unsigned long)idx, key]] = innerObj;
+            }];
         }];
+
+        [[wself operationWithMethod:@"POST" path:@"/api/v2/events/bulk" parameters:eventDictionary andCompletionBlock:^(id JSON, NSError *error){
+            NSAssert(!error, @"Request failed with error: %@", error);
+            [wself dispatchOnSynchronousQueue:^{
+                if([[JSON objectForKey:@"success"] boolValue]){
+                    for(NSString *eventFile in eventFiles){
+                        NSString *eventFilePath = [[self queuedEventsDirectoryPath] stringByAppendingPathComponent:eventFile];                        
+                        [[NSFileManager defaultManager] removeItemAtPath:eventFilePath error:nil];
+                        NSString *identifier = [eventFile stringByDeletingPathExtension];
+                        [wself.currentlySyncing removeObject:identifier];
+                    }
+                }
+            }];
+        }] start];
     }];
 }
 
-- (void)addEventToQueueWithPath:(NSString *)path withParameters:(NSDictionary *)parameters{
-    [self dispatchOnSynchronousQueue:^{     
+- (void)addEventToQueueWithParameters:(NSDictionary *)parameters{
+    [self dispatchOnSynchronousQueue:^{
         NSString *identifier = [[NSProcessInfo processInfo] globallyUniqueString];
-        LNQueuedEvent *queuedEvent = [LNQueuedEvent queuedEventWithPath:path andParameters:parameters];
         NSString *eventFilePath = [[self queuedEventsDirectoryPath] stringByAppendingPathComponent:identifier];
         eventFilePath = [eventFilePath stringByAppendingPathExtension:@"plist"];
-        [NSKeyedArchiver archiveRootObject:queuedEvent toFile:eventFilePath];
+        [NSKeyedArchiver archiveRootObject:parameters toFile:eventFilePath];
         if(self.logEvents){
-            NSLog(@"%@: %@", NSStringFromClass([self class]), queuedEvent);
+            NSLog(@"%@: %@", NSStringFromClass([self class]), parameters);
         }
     }];
 }
@@ -404,19 +414,7 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
     NSParameterAssert(person);
     NSMutableDictionary *parameters = [[event parameters] mutableCopy];
     [parameters addEntriesFromDictionary:[person parameters]];
-    [self addEventToQueueWithPath:@"/api/v2/events" withParameters:parameters];
-}
-
-- (void)updateCurrentPerson{
-    if(self.currentPerson == nil){
-        return;
-    }
-    [self updatePerson:self.currentPerson];
-}
-
-- (void)updatePerson:(LNPerson *)person{
-    NSParameterAssert(person);
-    [self addEventToQueueWithPath:@"/api/v2/people" withParameters:[person parameters]];
+    [self addEventToQueueWithParameters:parameters];
 }
 
 - (AFHTTPClient *)httpClient{
