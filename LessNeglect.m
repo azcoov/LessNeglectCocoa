@@ -418,7 +418,7 @@ static NSString *kEventQueueName = @"com.lessneglect.eventqueue";
 }
 
 - (AFHTTPClient *)httpClient{
-    return [AFHTTPClient clientWithBaseURL:[NSURL URLWithString:@"https://api.lessneglect.com"]];
+    return [AFHTTPClient clientWithBaseURL:[NSURL URLWithString:@"https://api.preact.io"]];
 }
 
 - (NSOperation *)operationWithMethod:(NSString *)method path:(NSString *)path parameters:(NSDictionary *)parameters
